@@ -26,20 +26,14 @@ export default function AdminDashboard() {
   }
 
   async function fetchAll() {
-    const [{ data: p, error: e1 }, { data: s, error: e2 }, { data: pr, error: e3 }] = await Promise.all([
+    const [{ data: p }, { data: s }, { data: pr }] = await Promise.all([
       supabase.from('profile').select('*').single(),
       supabase.from('skills').select('*').order('sort_order'),
       supabase.from('projects').select('*').order('sort_order'),
     ]);
-    
-    // Tambah ini untuk debug
-    if (e1 || e2 || e3) {
-      alert('Error: ' + JSON.stringify(e1 || e2 || e3));
-    }
-    
     if (p) setProfile(p);
-    if (s && s.length > 0) setSkills(s);
-    if (pr && pr.length > 0) setProjects(pr);
+    if (s) setSkills(s);
+    if (pr) setProjects(pr);
   }
 
   async function saveProfile() {
@@ -254,33 +248,13 @@ export default function AdminDashboard() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {skills.map(skill => (
-              <div key={skill.id} style={{
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '16px', padding: '20px 24px',
-                display: 'grid', gridTemplateColumns: '1fr 1fr auto auto auto', gap: '12px', alignItems: 'center',
-              }}>
-                <input value={skill.name} onChange={e => setSkills(s => s.map(x => x.id === skill.id ? { ...x, name: e.target.value } : x))}
-                  style={inputStyle} placeholder="Nama Skill" />
-                <input value={skill.category} onChange={e => setSkills(s => s.map(x => x.id === skill.id ? { ...x, category: e.target.value } : x))}
-                  style={inputStyle} placeholder="Kategori" />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input type="range" min={0} max={100}
-                    value={skill.level}
-                    onChange={e => setSkills(s => s.map(x => x.id === skill.id ? { ...x, level: +e.target.value } : x))}
-                    style={{ width: '80px', accentColor: 'rgba(240,237,232,0.7)' }} />
-                  <span style={{ fontSize: '13px', color: 'rgba(240,237,232,0.5)', width: '30px' }}>{skill.level}</span>
-                </div>
-                <button onClick={() => saveSkill(skill)} style={{
-                  padding: '8px 14px', borderRadius: '8px', fontSize: '12px',
-                  background: 'rgba(100,200,130,0.1)', border: '1px solid rgba(100,200,130,0.2)',
-                  color: 'rgba(150,230,160,0.8)', cursor: 'pointer',
-                }}>Simpan</button>
-                <button onClick={() => deleteSkill(skill.id)} style={{
-                  padding: '8px 14px', borderRadius: '8px', fontSize: '12px',
-                  background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.15)',
-                  color: 'rgba(255,120,120,0.7)', cursor: 'pointer',
-                }}>Hapus</button>
-              </div>
+              <SkillRow
+                key={skill.id}
+                skill={skill}
+                onSave={saveSkill}
+                onDelete={deleteSkill}
+                onUpdate={(updated) => setSkills(s => s.map(x => x.id === updated.id ? updated : x))}
+              />
             ))}
           </div>
         </div>
@@ -353,6 +327,69 @@ export default function AdminDashboard() {
   );
 }
 
+// ── Komponen terpisah agar input tidak terbalik ──
+function SkillRow({ skill, onSave, onDelete, onUpdate }: {
+  skill: Skill;
+  onSave: (s: Skill) => void;
+  onDelete: (id: string) => void;
+  onUpdate: (s: Skill) => void;
+}) {
+  const [name, setName] = useState(skill.name);
+  const [category, setCategory] = useState(skill.category);
+  const [level, setLevel] = useState(skill.level);
+
+  const current = { ...skill, name, category, level };
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '16px', padding: '20px 24px',
+      display: 'flex', flexDirection: 'column', gap: '12px',
+    }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div>
+          <label style={labelStyle}>Nama Skill</label>
+          <input
+            value={name}
+            onChange={e => { setName(e.target.value); onUpdate({ ...current, name: e.target.value }); }}
+            style={inputStyle}
+            placeholder="Nama Skill"
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Kategori</label>
+          <input
+            value={category}
+            onChange={e => { setCategory(e.target.value); onUpdate({ ...current, category: e.target.value }); }}
+            style={inputStyle}
+            placeholder="Frontend / Backend / dll"
+          />
+        </div>
+      </div>
+      <div>
+        <label style={labelStyle}>Level: {level}</label>
+        <input
+          type="range" min={0} max={100} value={level}
+          onChange={e => { setLevel(+e.target.value); onUpdate({ ...current, level: +e.target.value }); }}
+          style={{ width: '100%', accentColor: 'rgba(240,237,232,0.7)', marginTop: '6px' }}
+        />
+      </div>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button onClick={() => onSave(current)} style={{
+          padding: '8px 18px', borderRadius: '8px', fontSize: '13px',
+          background: 'rgba(100,200,130,0.1)', border: '1px solid rgba(100,200,130,0.2)',
+          color: 'rgba(150,230,160,0.8)', cursor: 'pointer',
+        }}>Simpan</button>
+        <button onClick={() => onDelete(skill.id)} style={{
+          padding: '8px 18px', borderRadius: '8px', fontSize: '13px',
+          background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.15)',
+          color: 'rgba(255,120,120,0.7)', cursor: 'pointer',
+        }}>Hapus</button>
+      </div>
+    </div>
+  );
+}
+
 const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: '11px', letterSpacing: '0.1em',
   textTransform: 'uppercase', color: 'rgba(240,237,232,0.35)', marginBottom: '6px',
@@ -374,4 +411,5 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
       <input value={value} onChange={e => onChange(e.target.value)} style={inputStyle} />
     </div>
   );
-}
+                             }
+              
