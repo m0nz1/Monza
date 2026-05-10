@@ -26,14 +26,20 @@ export default function AdminDashboard() {
   }
 
   async function fetchAll() {
-    const [{ data: p }, { data: s }, { data: pr }] = await Promise.all([
+    const [{ data: p, error: e1 }, { data: s, error: e2 }, { data: pr, error: e3 }] = await Promise.all([
       supabase.from('profile').select('*').single(),
       supabase.from('skills').select('*').order('sort_order'),
       supabase.from('projects').select('*').order('sort_order'),
     ]);
+    
+    // Tambah ini untuk debug
+    if (e1 || e2 || e3) {
+      alert('Error: ' + JSON.stringify(e1 || e2 || e3));
+    }
+    
     if (p) setProfile(p);
-    if (s) setSkills(s);
-    if (pr) setProjects(pr);
+    if (s && s.length > 0) setSkills(s);
+    if (pr && pr.length > 0) setProjects(pr);
   }
 
   async function saveProfile() {
