@@ -16,7 +16,25 @@
   --radius-sm: 12px;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+*:focus { outline: none; }
+*:focus-visible { outline: 2px solid rgba(255,255,255,0.3); outline-offset: 2px; }
+
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(255,255,255,0.15);
+  color: #f0ede8;
+}
 
 html { scroll-behavior: smooth; }
 
